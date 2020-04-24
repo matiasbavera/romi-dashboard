@@ -86,6 +86,7 @@ export default function ScheduleVisualizer(props: ScheduleVisualizerProps): Reac
   const colorManager = React.useMemo(() => new ColorManager(), []);
 
   const settings = React.useContext(SettingsContext);
+  const trajLookahead = 60000; // 1 min
   const trajAnimDuration = React.useMemo(() => {
     switch (settings.trajectoryAnimationSpeed) {
       case AnimationSpeed.Slow:
@@ -97,15 +98,16 @@ export default function ScheduleVisualizer(props: ScheduleVisualizerProps): Reac
     }
   }, [settings]);
   const TrajectoryComponent = React.useMemo(() => {
+    const animationScale = trajLookahead / trajAnimDuration;
     switch (settings.trajectoryAnimation) {
       case TrajectoryAnimation.None:
         return RobotTrajectory;
       case TrajectoryAnimation.Fill:
-        return withFillAnimation(RobotTrajectory, trajAnimDuration * 0.8);
+        return withFillAnimation(RobotTrajectory, animationScale);
       case TrajectoryAnimation.Follow:
-        return withFollowAnimation(RobotTrajectory, trajAnimDuration * 0.8);
+        return withFollowAnimation(RobotTrajectory, animationScale);
       case TrajectoryAnimation.Outline:
-        return withOutlineAnimation(RobotTrajectory, trajAnimDuration * 0.8);
+        return withOutlineAnimation(RobotTrajectory, animationScale);
     }
   }, [settings.trajectoryAnimation, trajAnimDuration]);
 
@@ -182,7 +184,7 @@ export default function ScheduleVisualizer(props: ScheduleVisualizerProps): Reac
           request: 'trajectory',
           param: {
             map_name: curMapFloorLayer.level.name,
-            duration: 60000,
+            duration: trajLookahead,
             trim: true,
           },
         });
