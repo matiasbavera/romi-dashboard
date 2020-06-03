@@ -94,9 +94,10 @@ export default function ScheduleVisualizer(props: ScheduleVisualizerProps): Reac
     if (!curMapFloorLayer) {
       return [];
     }
-    return props.fleets.flatMap(x =>
-      x.robots.filter(r => r.location.level_name === curMapFloorLayer.level.name),
-    );
+    return props.fleets.flatMap(x => x.robots);
+    // return props.fleets.flatMap(x =>
+    //   x.robots.filter(r => r.location.level_name === curMapFloorLayer.level.name),
+    // );
   }, [props.fleets, curMapFloorLayer]);
 
   const colorManager = React.useMemo(() => new ColorManager(), []);
