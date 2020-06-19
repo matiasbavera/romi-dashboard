@@ -12,6 +12,7 @@ export interface RobotTrajectoryProps
   trajectory: Trajectory;
   conflicts: Conflict[];
   conflictsSegments?: RawKnot[];
+  trajectSegments?: RawKnot[];
   footprint: number;
   colorManager: Readonly<ColorManager>;
 }
@@ -25,6 +26,7 @@ export const RobotTrajectory = React.forwardRef(function(
     conflicts,
     footprint,
     conflictsSegments,
+    trajectSegments,
     colorManager,
     ...otherProps
   } = props;
@@ -48,11 +50,32 @@ export const RobotTrajectory = React.forwardRef(function(
     return d;
   }, [trajectory]);
 
+  // const pathWithoutConflict = React.useMemo(() => {
+  //   if (trajectSegments && trajectSegments.length !== 0) {
+  //     const knots = rawKnotsToKnots(trajectSegments);
+  //     const coeff = knotsToSegmentCoefficientsArray(knots);
+  //     const bezierSplines = coeff.map(bezierControlPoints);
+
+  //     let d = `M ${bezierSplines[0][0][0]} ${-bezierSplines[0][0][1]} C `;
+  //     bezierSplines.map(
+  //       bzCurves =>
+  //         (d +=
+  //           `${bzCurves[1][0]} ${-bzCurves[1][1]} ` +
+  //           `${bzCurves[2][0]} ${-bzCurves[2][1]} ` +
+  //           `${bzCurves[3][0]} ${-bzCurves[3][1]} `),
+  //     );
+  //     // console.log(d);
+  //     return d;
+  //   }
+  // }, [trajectSegments]);
+
   const pathConflict = React.useMemo(() => {
     if (conflictsSegments && conflictsSegments.length !== 0) {
       const knots = rawKnotsToKnots(conflictsSegments);
       const coeff = knotsToSegmentCoefficientsArray(knots);
+      console.log(coeff);
       const bezierSplines = coeff.map(bezierControlPoints);
+      console.log(bezierSplines);
 
       let d = `M ${bezierSplines[0][0][0]} ${-bezierSplines[0][0][1]} C `;
       bezierSplines.map(
@@ -67,28 +90,15 @@ export const RobotTrajectory = React.forwardRef(function(
     }
   }, [conflictsSegments]);
 
-  // useEffect(() => {
-  //   async function settingColor() {
-  //     setColor(await colorManager.robotColor(trajectory.id.toString(), trajectory.id.toString()));
-  //   }
-  //   settingColor();
-  // }, [trajectory, colorManager]);
+  useEffect(() => {
+    async function settingColor() {
+      setColor(await colorManager.robotColor(trajectory.id.toString(), trajectory.id.toString()));
+    }
+    settingColor();
+  }, [trajectory, colorManager]);
 
   return (
     <>
-      <path
-        ref={ref}
-        d={pathD}
-        stroke={color}
-        opacity={0.8}
-        strokeWidth={footprint * 0.8}
-        strokeLinecap="round"
-        fill="none"
-        pathLength={1}
-        strokeDasharray={2}
-        strokeDashoffset={0}
-        {...otherProps}
-      />
       {pathConflict && (
         <path
           ref={ref}
@@ -104,6 +114,19 @@ export const RobotTrajectory = React.forwardRef(function(
           {...otherProps}
         />
       )}
+      <path
+        ref={ref}
+        d={pathD}
+        stroke={color}
+        opacity={0.8}
+        strokeWidth={footprint * 0.8}
+        strokeLinecap="round"
+        fill="none"
+        pathLength={1}
+        strokeDasharray={2}
+        strokeDashoffset={0}
+        {...otherProps}
+      />
     </>
   );
 });

@@ -9,6 +9,7 @@ import {
   Trajectory,
   TrajectoryResponse,
   RawKnot,
+  TrajectorySegmentManager,
 } from '../../robot-trajectory-manager';
 import { AnimationSpeed, SettingsContext, TrajectoryAnimation } from '../../settings';
 import { toBlobUrl } from '../../util';
@@ -231,64 +232,55 @@ export default function ScheduleVisualizer(props: ScheduleVisualizerProps): Reac
     return resp ? resp.conflicts : [];
   }
 
-  function getConflictsPoints(levelName: string): RawKnot[] {
+  function getConflictsPoints(levelName: string): RawKnot[] | undefined {
     const resp = trajectories[levelName];
-
-    function getSegmentsById(id: number) {
-      const trajectory = resp.values.find(element => element.id === id);
-      return trajectory?.segments;
-    }
-
-    function getPositionXY(segment: RawKnot) {
-      return { x: segment.x[0], y: segment.x[1] };
-    }
-
-    function getConflictCoords(positions: TrajectoryCoords[]) {
-      const seen = positions.filter(
-        (set => (position: any) =>
-          set.has(JSON.stringify(position)) || !set.add(JSON.stringify(position)))(new Set()),
-      );
-
-      let uniqueCoords: TrajectoryCoords[] = [];
-      for (let index = 0; index < seen.length; index++) {
-        const element = seen[index];
-        if (!uniqueCoords.some(e => JSON.stringify(e) === JSON.stringify(element))) {
-          uniqueCoords.push(element);
-        }
-      }
-      return uniqueCoords;
-    }
-
-    function getConflictSegments(conflictTrajectories: RawKnot[], positions: TrajectoryCoords[]) {
-      let conflictSegments: RawKnot[] = [];
-      for (let index = 0; index < conflictTrajectories.length; index++) {
-        const trajectory = conflictTrajectories[index];
-        for (let index = 0; index < positions.length; index++) {
-          const position = positions[index];
-          if (trajectory.x[0] === position.x && trajectory.x[1] === position.y) {
-            conflictSegments.push(trajectory);
-          }
-        }
-      }
-      return conflictSegments;
-    }
 
     if (resp && resp.conflicts) {
       let conflictTrajectoryPositions: any = [];
       let conflictTrajectories: RawKnot[] = [];
       resp.conflicts.forEach(trajectoryId => {
-        const segments = getSegmentsById(trajectoryId);
+        const segments = TrajectorySegmentManager.getSegmentsById(resp, trajectoryId);
         segments &&
           segments.forEach(segment => {
-            conflictTrajectoryPositions.push(getPositionXY(segment));
+            conflictTrajectoryPositions.push(TrajectorySegmentManager.getPositionXY(segment));
             conflictTrajectories.push(segment);
           });
       });
       // Get the conflicting coords from the segments
-      const conflictCoords = getConflictCoords(conflictTrajectoryPositions);
+      const conflictCoords = TrajectorySegmentManager.getConflictCoords(
+        conflictTrajectoryPositions,
+      );
       // filters segments with conflicts
-      const conflictPoints = getConflictSegments(conflictTrajectories, conflictCoords);
+      const conflictPoints = TrajectorySegmentManager.getConflictSegments(
+        conflictTrajectories,
+        conflictCoords,
+      );
+      console.log('resp', resp);
+      console.log('conflictPoints', conflictPoints);
+
       return conflictPoints;
+    }
+    return [];
+  }
+
+  function getNonConflictPoints(levelName: string) {
+    const resp = trajectories[levelName];
+    let conflictTrajectories: RawKnot[] = [];
+
+    if (resp && resp.conflicts) {
+      resp.conflicts.forEach(trajectoryId => {
+        const segments = TrajectorySegmentManager.getSegmentsById(resp, trajectoryId);
+        segments && Array.prototype.push.apply(conflictTrajectories, segments);
+      });
+      const conflictPoints = getConflictsPoints(levelName);
+      const getNonConflictSegments = TrajectorySegmentManager.getNonConflictSegments(
+        conflictTrajectories,
+        conflictPoints,
+      );
+      // filters segments with conflicts
+      console.log('getNonConflictSegments', getNonConflictSegments);
+
+      return getNonConflictSegments;
     }
     return [];
   }
@@ -346,6 +338,7 @@ export default function ScheduleVisualizer(props: ScheduleVisualizerProps): Reac
                   trajs={getTrajectory(curMapFloorLayer.level.name)}
                   conflicts={getConflicts(curMapFloorLayer.level.name)}
                   conflictsSegments={getConflictsPoints(curMapFloorLayer.level.name)}
+                  trajectSegments={getNonConflictPoints(curMapFloorLayer.level.name)}
                   colorManager={colorManager}
                 />
               </RobotTrajectoryContext.Provider>
