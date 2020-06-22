@@ -26,6 +26,7 @@ import SettingsDrawer from './settings-drawer';
 import { SpotlightValue } from './spotlight-value';
 import { DoorStateContext } from './schedule-visualizer/doors-overlay';
 import { LiftStateContext } from './schedule-visualizer/lift-overlay';
+import NotificationBar from './notification-bar';
 
 const borderRadius = 20;
 
@@ -395,6 +396,8 @@ export default function App(props: AppProps): JSX.Element {
             onClose={() => setShowSettings(false)}
           />
         </div>
+
+        <NotificationBar message="Robot conflict" type="error" />
       </SettingsContext.Provider>
     </React.Fragment>
   );
